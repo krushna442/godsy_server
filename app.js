@@ -13,7 +13,7 @@ const app = express();
 // Helmet helps secure your app by setting various HTTP headers
 app.use(helmet({ crossOriginResourcePolicy: false })); 
 app.use(cors({
-  origin: ["https://godsy.tech,http://localhost:8080/"],
+  origin: ["https://godsy.tech","http://localhost:8080/"],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
