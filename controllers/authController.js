@@ -47,6 +47,8 @@ exports.login = async (req, res, next) => {
 
     // 2. Check if user exists and password matches
     if (user && (await user.matchPassword(password))) {
+      localStorage.setItem("token", data.token);
+localStorage.setItem("user", JSON.stringify(data));
       res.json({
         success: true,
         _id: user._id,
