@@ -55,31 +55,83 @@ exports.getAllAdminPosts = async (req, res, next) => {
 
 // @desc    Create a new post
 // @route   POST /api/blog/admin
+// controllers/blogController.js
+
 exports.createPost = async (req, res, next) => {
   try {
-    const { title, content, category, tags, status } = req.body;
+    console.log('Creating post with data:', req.body);
+    
+    const { 
+      title, 
+      content, 
+      excerpt, 
+      author, 
+      category, 
+      tags, 
+      status,
+      featuredImage 
+    } = req.body;
 
-    // Cloudinary returns the URL in 'path' and the ID in 'filename'
-    const imageUrl = req.file ? req.file.path : null;
-    const imageId = req.file ? req.file.filename : null;
+    // Check required fields
+    if (!title || !content) {
+      res.status(400);
+      throw new Error('Title and content are required');
+    }
 
-    const post = await BlogPost.create({
+    // Create slug from title
+    const slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+
+    // Check if slug already exists
+    const existingPost = await BlogPost.findOne({ slug });
+    if (existingPost) {
+      res.status(400);
+      throw new Error('A post with this title already exists');
+    }
+
+    // Prepare post data
+    const postData = {
       title,
+      slug,
       content,
-      category,
+      excerpt: excerpt || content.substring(0, 150) + '...',
+      author: author || req.user._id,
+      category: category || 'Uncategorized',
       tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
-      featuredImage: imageUrl,
-      featuredImagePublicId: imageId,
-      author: req.user._id, 
-      status: status || 'draft'
+      status: status || 'draft',
+    };
+
+    // Handle Cloudinary image data
+    if (featuredImage && featuredImage.url) {
+      postData.featuredImage = {
+        url: featuredImage.url,
+        public_id: featuredImage.public_id || null,
+        provider: 'cloudinary'
+      };
+    }
+
+    console.log('Saving post with data:', postData);
+
+    // Save to database
+    const post = await Post.create(postData);
+
+    console.log('Post created successfully:', post._id);
+
+    res.status(201).json({
+      success: true,
+      data: post
     });
 
-    res.status(201).json({ success: true, data: post });
   } catch (error) {
+    console.error('Error creating post:', error);
     next(error);
   }
 };
 
+// Update other controller functions to handle the new image structure
 // @desc    Update post & handle Cloudinary replacement
 // @route   PUT /api/blog/admin/:id
 exports.updatePost = async (req, res, next) => {
